@@ -55,7 +55,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 # Train the model without validation
 model.fit(
     train_generator,
-    epochs=1,
+    epochs=50,
     steps_per_epoch=len(train_generator)
 )
 

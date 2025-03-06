@@ -104,7 +104,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 history = model.fit(
     train_generator,
     validation_data=val_generator,
-    epochs=1,
+    epochs=50,
     steps_per_epoch=len(train_generator),
     validation_steps=len(val_generator)
 )

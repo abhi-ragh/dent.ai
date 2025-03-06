@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagnosis Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .diagnosis-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .diagnosis-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 15px;
+            text-align: left;
+        }
+
+        .diagnosis-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .diagnosis-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .diagnosis-table tr:nth-child(even) {
+            background-color: var(--light-bg);
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .certainty-high { background-color: #27ae60; color: white; }
+        .certainty-medium { background-color: #f1c40f; color: var(--text-dark); }
+        .certainty-low { background-color: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Diagnosis Result</h1>
+            <p class="subtitle">View and download your analysis results</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <div class="patient-header">
+                <h3>Patient: {{ patient_name }} (ID: {{ patient_id }})</h3>
+                <div class="meta-info">
+                    <span class="badge" style="background: var(--primary-color)">{{ diagnosis_type }}</span>
+                    <span class="date">{{ date }}</span>
+                </div>
+            </div>
+
+            {% if image_path %}
+            <img src="{{ url_for('static', filename=image_path) }}" 
+                 alt="Diagnosis Image" 
+                 class="diagnosis-image"
+                 style="max-width: 100%; border-radius: 8px; margin: 20px 0; box-shadow: var(--card-shadow);">
+            {% endif %}
+
+            {% if diagnosis_data.clinical_findings %}
+            <section class="report-section">
+                <h3 class="section-title"><i class="fas fa-clipboard-check"></i> Clinical Findings</h3>
+                <table class="diagnosis-table">
+                    <thead>
+                        <tr>
+                            <th>Observation</th>
+                            <th>Significance</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for finding in diagnosis_data.clinical_findings %}
+                        <tr>
+                            <td>{{ finding.observation }}</td>
+                            <td>{{ finding.significance }}</td>
+                            <td>
+                                <span class="severity-badge" style="background: var(--primary-dark); color: white;">
+                                    {{ finding.confidence }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+            {% endif %}
+
+            {% if diagnosis_data.diagnosis %}
+            <section class="report-section">
+                <h3 class="section-title"><i class="fas fa-diagnoses"></i> Diagnostic Assessment</h3>
+                <table class="diagnosis-table">
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Severity</th>
+                            <th>Certainty</th>
+                            <th>Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for diag in diagnosis_data.diagnosis %}
+                        <tr>
+                            <td>{{ diag.condition }}</td>
+                            <td>
+                                <span class="severity-badge">
+                                    {{ diag.severity }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="severity-badge certainty-{{ diag.certainty|lower }}">
+                                    {{ diag.certainty }}
+                                </span>
+                            </td>
+                            <td>
+                                <ul style="margin: 0; padding-left: 20px;">
+                                    {% for evidence in diag.supporting_evidence %}
+                                    <li>{{ evidence }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+            {% endif %}
+
+            {% if diagnosis_data.treatment_plan %}
+            <section class="report-section">
+                <h3 class="section-title"><i class="fas fa-prescription-bottle"></i> Treatment Plan</h3>
+                <table class="diagnosis-table">
+                    <thead>
+                        <tr>
+                            <th>Intervention</th>
+                            <th>Priority</th>
+                            <th>Timeline</th>
+                            <th>Expected Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for treatment in diagnosis_data.treatment_plan %}
+                        <tr>
+                            <td>{{ treatment.intervention }}</td>
+                            <td>
+                                <span class="severity-badge" style="background: {{ 'var(--primary-color)' if treatment.priority == 'High' else '#f39c12' if treatment.priority == 'Medium' else '#7f8c8d' }}; color: white;">
+                                    {{ treatment.priority }}
+                                </span>
+                            </td>
+                            <td>{{ treatment.timeline }}</td>
+                            <td>{{ treatment.expected_outcome }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+            {% endif %}
+
+            <div class="actions-container">
+                <a href="/diagnosis/result/pdf" class="button pdf-button">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </a>
+                <a href="/diagnosis/options" class="button btn-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Options
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Medical Diagnosis System. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

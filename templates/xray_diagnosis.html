@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Xray Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Xray Analysis</h1>
+            <p class="subtitle">Upload and analyze Xray images</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-x-ray"></i> Xray Analysis</h2>
+            <div class="patient-info">
+                Patient: {{ patient_name }}
+            </div>
+            
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div class="upload-box">
+                    <input type="file" name="xray_file" accept="image/*" required>
+                    <p>Drag and drop or click to upload Xray image</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Doctor's Remarks (optional):</label>
+                    <textarea class="remarks" name="doctor_remarks"></textarea>
+                </div>
+                
+                <button type="submit" class="button btn-primary">
+                    <i class="fas fa-microscope"></i> Analyze Xray
+                </button>
+            </form>
+            
+            <a href="/diagnosis/options" class="button secondary">
+                <i class="fas fa-arrow-left"></i> Back to Options
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

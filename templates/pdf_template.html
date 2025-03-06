@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 20px;
+        }
+        .header { 
+            text-align: center; 
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .patient-info { 
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .diagnosis-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .signature-box {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Dental Diagnostic Report</h1>
+        <p>Generated on: {{ date }}</p>
+    </div>
+    
+    <div class="patient-info">
+        <h3>Patient Information</h3>
+        <table>
+            <tr>
+                <td><strong>Name:</strong></td>
+                <td>{{ patient_name }}</td>
+                <td><strong>Patient ID:</strong></td>
+                <td>{{ patient_id }}</td>
+            </tr>
+            <tr>
+                <td><strong>Analysis Type:</strong></td>
+                <td colspan="3">{{ diagnosis_type }}</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if diagnosis_data.clinical_findings %}
+    <div class="section">
+        <h2>Clinical Findings</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Observation</th>
+                    <th>Significance</th>
+                    <th>Confidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for finding in diagnosis_data.clinical_findings %}
+                <tr>
+                    <td>{{ finding.observation }}</td>
+                    <td>{{ finding.significance }}</td>
+                    <td>{{ finding.confidence }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if diagnosis_data.diagnosis %}
+    <div class="section">
+        <h2>Diagnostic Assessment</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Condition</th>
+                    <th>Severity</th>
+                    <th>Certainty</th>
+                    <th>Supporting Evidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for diagnosis in diagnosis_data.diagnosis %}
+                <tr>
+                    <td>{{ diagnosis.condition }}</td>
+                    <td>{{ diagnosis.severity }}</td>
+                    <td>{{ diagnosis.certainty }}</td>
+                    <td>
+                        <ul style="margin:0; padding-left:20px">
+                            {% for evidence in diagnosis.supporting_evidence %}
+                            <li>{{ evidence }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if diagnosis_data.treatment_plan %}
+    <div class="section">
+        <h2>Treatment Plan</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Intervention</th>
+                    <th>Priority</th>
+                    <th>Timeline</th>
+                    <th>Expected Outcome</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for treatment in diagnosis_data.treatment_plan %}
+                <tr>
+                    <td>{{ treatment.intervention }}</td>
+                    <td>{{ treatment.priority }}</td>
+                    <td>{{ treatment.timeline }}</td>
+                    <td>{{ treatment.expected_outcome }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if diagnosis_data.preventative_measures %}
+    <div class="section">
+        <h2>Preventative Measures</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Recommendation</th>
+                    <th>Rationale</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for measure in diagnosis_data.preventative_measures %}
+                <tr>
+                    <td>{{ measure.recommendation }}</td>
+                    <td>{{ measure.rationale }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if diagnosis_data.follow_up %}
+    <div class="section">
+        <h2>Follow-up Plan</h2>
+        <p><strong>Timeline:</strong> {{ diagnosis_data.follow_up.timeline }}</p>
+        <h4>Monitoring Parameters:</h4>
+        <ul>
+            {% for item in diagnosis_data.follow_up.specific_monitoring %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if image_path %}
+    <div class="section">
+        <h2>Clinical Image</h2>
+        <img src="{{ url_for('static', filename=image_path, _external=True) }}" 
+             style="max-width: 100%; height: auto; border: 1px solid #ddd; padding: 5px;">
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Generated by AI Diagnostic System</p>
+        <p>This report is intended for clinical use and should be reviewed by a qualified healthcare professional</p>
+    </div>
+</body>
+</html>

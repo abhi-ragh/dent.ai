@@ -1,0 +1,40 @@
+<!-- patient_history.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+    <header class="header">
+        <!-- Keep existing header structure -->
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-history"></i> Diagnostic History</h2>
+            <div class="patient-info">
+                Patient: {{ patient_name }} (ID: {{ patient_id }})
+            </div>
+            
+            {% if history|length > 0 %}
+            <div class="history-list">
+                {% for item in history %}
+                <div class="history-item">
+                    <div class="history-date">{{ item.date }}</div>
+                    <h3>{{ item.code }}</h3>
+                    <pre>{{ item.diagnosis|tojson(indent=2) }}</pre>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-results">No diagnostic history found</div>
+            {% endif %}
+            
+            <a href="/diagnosis/options" class="button-back">
+                <i class="fas fa-arrow-left"></i> Back to Options
+            </a>
+        </div>
+    </div>
+</body>
+</html>
