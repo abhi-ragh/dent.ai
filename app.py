@@ -27,6 +27,7 @@ from fhirclient.models.fhirdate import FHIRDate
 from fhirclient.models.fhirdatetime import FHIRDateTime
 import pdfkit
 from datetime import datetime, timezone
+import csv
 
 PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
@@ -120,9 +121,10 @@ def create_new_patient(data):
 def get_patient_history(patient_id):
     """Retrieve patient diagnostic history from FHIR"""
     search_url = f"{FHIR_SERVER_URL}/Observation?subject=Patient/{patient_id}&_sort=-date"
-    response = requests.get(search_url)
-    
-    if response.status_code == 200:
+    try:
+        response = requests.get(search_url)
+        response.raise_for_status()  # Raise exception for HTTP errors
+        
         bundle_data = response.json()
         history = []
         
@@ -136,19 +138,26 @@ def get_patient_history(patient_id):
                         try:
                             diagnosis_data = json.loads(obs_data['valueString'])
                             
+                            # Get date with fallback options
+                            date = obs_data.get('effectiveDateTime', 
+                                   obs_data.get('issued', 'Unknown date'))
+                            
                             history_item = {
                                 'id': obs_data['id'],
-                                'date': obs_data.get('effectiveDateTime', ''),
+                                'date': date,
                                 'code': obs_data.get('code', {}).get('text', 'Unknown observation'),
                                 'diagnosis': diagnosis_data
                             }
                             history.append(history_item)
-                        except:
-                            # Skip if the valueString is not valid JSON
+                        except json.JSONDecodeError:
+                            print(f"Invalid JSON in observation {obs_data.get('id', 'unknown')}")
                             continue
         
+        print(f"Retrieved {len(history)} history items for patient {patient_id}")
         return history
-    return []
+    except Exception as e:
+        print(f"Error retrieving patient history: {str(e)}")
+        return []
 
 def save_diagnostic_result(patient_id, diagnosis_type, diagnosis_data, remarks=""):
     """Minimal Observation creation to satisfy FHIR server requirements."""
@@ -159,14 +168,11 @@ def save_diagnostic_result(patient_id, diagnosis_type, diagnosis_data, remarks="
     from fhirclient.models.codeableconcept import CodeableConcept
     from fhirclient.models.coding import Coding
 
-    # Create a minimal Observation instance
     observation = Observation()
     observation.status = "final"
     
-    # Patient reference is required
     observation.subject = FHIRReference({"reference": f"Patient/{patient_id}"})
     
-    # Code is required – using our custom code for now
     observation.code = CodeableConcept({
         "coding": [{
             "system": "http://dental-diagnostic.org/observation-codes",
@@ -176,17 +182,24 @@ def save_diagnostic_result(patient_id, diagnosis_type, diagnosis_data, remarks="
         "text": "AI Diagnostic Assessment"
     })
     
-    # Effective date/time and issued are good to have
-    observation.effectiveDateTime = FHIRDateTime("2025-03-06T00:00:00Z")
-    observation.issued = FHIRInstant("2025-03-06T00:00:00Z")
+    # Store current timestamp in UTC
+    current_time = datetime.now(timezone.utc).isoformat()
+    observation.effectiveDateTime = FHIRDateTime(current_time)
+    observation.issued = FHIRInstant(current_time)
     
-    # Use a simple valueString for testing (replace this later with your diagnosis summary)
-    observation.valueString = "Test diagnosis summary"
+    # Store the actual diagnosis data as JSON string
+    observation.valueString = json.dumps(diagnosis_data)
     
-    print("Minimal Observation payload:", observation.as_json())
+    # Add remarks as a note if provided
+    if remarks:
+        observation.note = [{"text": remarks}]
     
-    # Attempt to create the Observation on the FHIR server
-    return observation.create(smart.server)
+    try:
+        result = observation.create(smart.server)
+        return result
+    except Exception as e:
+        print(f"Error saving diagnostic result: {str(e)}")
+        return None
 
 def get_gemini_diagnosis(diagnosis_type, condition_results, condition_accuracy, patient_history=None, remarks=None):
     """Get comprehensive diagnosis from Gemini API"""
@@ -429,6 +442,9 @@ def xray_diagnosis():
         
         save_diagnostic_result(patient_id, "xray_diagnosis", diagnosis_data, doctor_remarks)
         
+        updated_history = get_patient_history(patient_id)
+        session['patient_history'] = updated_history
+
         session['diagnosis_data'] = diagnosis_data
         session['diagnosis_type'] = "X-ray Analysis"
         session['condition_results'] = xray_predicted_class
@@ -477,6 +493,9 @@ def oral_diagnosis():
         )
         
         save_diagnostic_result(patient_id, "oral_diagnosis", diagnosis_data, doctor_remarks)
+
+        updated_history = get_patient_history(patient_id)
+        session['patient_history'] = updated_history
         
         session['diagnosis_data'] = diagnosis_data
         session['diagnosis_type'] = "Oral Disease Analysis"
@@ -564,6 +583,32 @@ def patient_history():
     history = get_patient_history(patient_id)
     
     return render_template('patient_history.html', patient_id=patient_id, patient_name=patient_name, history=history)
+
+@app.route('/submit_feedback', methods=['POST'])
+def submit_feedback():
+    data = request.get_json()
+    diagnosis_type = data.get('diagnosis_type', '').lower()
+
+    # Choose the right CSV file based on diagnosis type
+    if 'oral' in diagnosis_type:
+        feedback_file = 'oral_feedback.csv'
+    else:
+        feedback_file = 'xrays_feedback.csv'
+
+    # Check if file exists, if not write header row
+    file_exists = os.path.exists(feedback_file)
+    with open(feedback_file, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        if not file_exists:
+            writer.writerow(['patient_id', 'diagnosis_type', 'feedback', 'timestamp'])
+        writer.writerow([
+            data.get('patient_id'),
+            data.get('diagnosis_type'),
+            data.get('feedback'),
+            data.get('timestamp')
+        ])
+
+    return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
     app.run(debug=True)

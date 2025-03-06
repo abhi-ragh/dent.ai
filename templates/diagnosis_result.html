@@ -170,7 +170,7 @@
                 </table>
             </section>
             {% endif %}
-
+            <!-- (Inside your decision_html, right after the actions container) -->
             <div class="actions-container">
                 <a href="/diagnosis/result/pdf" class="button pdf-button">
                     <i class="fas fa-file-pdf"></i> Download PDF Report
@@ -179,6 +179,48 @@
                     <i class="fas fa-arrow-left"></i> Back to Options
                 </a>
             </div>
+
+            <!-- Feedback Section -->
+            <div class="feedback-container" style="margin-top: 20px; text-align: center;">
+                <p>Was this diagnosis helpful?</p>
+                <button class="thumbs-up" onclick="sendFeedback('up')" style="background: none; border: none; cursor: pointer; font-size: 2rem; margin: 0 10px;">
+                    <i class="fas fa-thumbs-up"></i>
+                </button>
+                <button class="thumbs-down" onclick="sendFeedback('down')" style="background: none; border: none; cursor: pointer; font-size: 2rem; margin: 0 10px;">
+                    <i class="fas fa-thumbs-down"></i>
+                </button>
+            </div>
+
+            <script>
+            function sendFeedback(feedback) {
+                // Disable the buttons to prevent multiple clicks
+                document.querySelectorAll('.feedback-container button').forEach(btn => btn.disabled = true);
+
+                // Prepare the payload
+                const payload = {
+                    feedback: feedback,
+                    patient_id: "{{ patient_id }}",
+                    diagnosis_type: "{{ diagnosis_type }}",
+                    timestamp: new Date().toISOString()
+                };
+
+                // Send feedback via an AJAX POST request
+                fetch('/submit_feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log("Feedback submitted:", result);
+                    alert('Thanks for your feedback!');
+                })
+                .catch(error => {
+                    console.error("Feedback submission error:", error);
+                });
+            }
+            </script>
+
         </div>
     </div>
 
