@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dental and Oral Disease AI Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .upload-section {
+            margin-bottom: 40px;
+        }
+        .upload-section h2 {
+            color: #2c3e50;
+        }
+        .upload-section input[type="file"] {
+            margin-top: 10px;
+        }
+        .upload-section input[type="submit"] {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .upload-section input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dental and Oral Disease AI Tool</h1>
+    
+    <div class="upload-section">
+        <h2>Dental X-Ray Analysis</h2>
+        <form action="/upload_dental" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required>
+            <br>
+            <input type="submit" value="Upload and Analyze">
+        </form>
+    </div>
+    
+    <div class="upload-section">
+        <h2>Oral Disease Analysis</h2>
+        <form action="/upload_oral" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required>
+            <br>
+            <input type="submit" value="Upload and Analyze">
+        </form>
+    </div>
+    
+    <div class="result">
+        {% if dental_result %}
+            <h2>Dental X-Ray Prediction</h2>
+            <p><strong>Predicted Class:</strong> {{ dental_result.predicted_class }}</p>
+            <p><strong>Confidence:</strong> {{ dental_result.confidence }}%</p>
+        {% endif %}
+        
+        {% if oral_result %}
+            <h2>Oral Disease Prediction</h2>
+            <p><strong>Predicted Class:</strong> {{ oral_result.predicted_class }}</p>
+            <p><strong>Confidence:</strong> {{ oral_result.confidence }}%</p>
+        {% endif %}
+    </div>
+</body>
+</html>
