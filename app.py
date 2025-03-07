@@ -559,18 +559,14 @@ def xray_diagnosis():
         )
         
         # Save to FHIR
-        if 'error' not in diagnosis_data:
-            save_result = save_diagnostic_result(
+
+        save_result = save_diagnostic_result(
                 patient_id, 
                 "xray_diagnosis", 
                 diagnosis_data, 
                 doctor_remarks
             )
-            if not save_result:
-                return render_template('xray_diagnosis.html', 
-                                    error="Failed to save diagnosis", 
-                                    patient_name=patient_name)
-        
+
         # Update session
         session['diagnosis_data'] = diagnosis_data
         session['diagnosis_type'] = "X-ray Analysis"
