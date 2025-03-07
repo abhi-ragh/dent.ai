@@ -31,7 +31,7 @@ import csv
 
 PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.urandom(24)
 
 # FHIR server configuration using SMART Health IT Sandbox
@@ -285,11 +285,15 @@ def get_gemini_diagnosis(diagnosis_type, condition_results, condition_accuracy, 
         return {"error": f"Error calling Gemini API: {str(e)}"}
 
 @app.route('/')
-def index():
-    session.clear()  # Clear any existing session data
+def landing():
+    return render_template('landing.html')
+
+@app.route('/app')
+def app_index():
+    session.clear()
     return render_template('index.html')
 
-@app.route('/patient_search', methods=['POST'])
+@app.route('/app/patient_search', methods=['POST'])
 def patient_search():
     if request.method == 'POST':
         search_term = request.form['search_term']
@@ -356,7 +360,7 @@ def patient_search():
         # No results found
         return render_template('patient_results.html', patients=[], search_term=search_term)
 
-@app.route('/patient/new', methods=['GET', 'POST'])
+@app.route('/app/patient/new', methods=['GET', 'POST'])
 def new_patient():
     if request.method == 'POST':
         patient_data = {
@@ -375,7 +379,7 @@ def new_patient():
     
     return render_template('new_patient.html')
 
-@app.route('/patient/<patient_id>/select', methods=['GET'])
+@app.route('/app/patient/<patient_id>/select', methods=['GET'])
 def select_patient(patient_id):
     patient_url = f"{FHIR_SERVER_URL}/Patient/{patient_id}"
     response = requests.get(patient_url)
@@ -394,20 +398,20 @@ def select_patient(patient_id):
         session['patient_history'] = patient_history
         return redirect(url_for('diagnosis_options'))
     
-    return redirect(url_for('index'))
+    return redirect(url_for('app_index'))
 
-@app.route('/diagnosis/options', methods=['GET'])
+@app.route('/app/diagnosis/options', methods=['GET'])
 def diagnosis_options():
     if 'patient_id' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('app_index'))
     patient_id = session['patient_id']
     patient_name = session['patient_name']
     return render_template('diagnosis_options.html', patient_id=patient_id, patient_name=patient_name)
 
-@app.route('/diagnosis/xray', methods=['GET', 'POST'])
+@app.route('/app/diagnosis/xray', methods=['GET', 'POST'])
 def xray_diagnosis():
     if 'patient_id' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('app_index'))
     
     patient_id = session['patient_id']
     patient_name = session['patient_name']
@@ -456,10 +460,10 @@ def xray_diagnosis():
     
     return render_template('xray_diagnosis.html', patient_name=patient_name)
 
-@app.route('/diagnosis/oral', methods=['GET', 'POST'])
+@app.route('/app/diagnosis/oral', methods=['GET', 'POST'])
 def oral_diagnosis():
     if 'patient_id' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('app_index'))
     
     patient_id = session['patient_id']
     patient_name = session['patient_name']
@@ -508,10 +512,10 @@ def oral_diagnosis():
     
     return render_template('oral_diagnosis.html', patient_name=patient_name)
 
-@app.route('/diagnosis/result', methods=['GET'])
+@app.route('/app/diagnosis/result', methods=['GET'])
 def diagnosis_result():
     if 'patient_id' not in session or 'diagnosis_data' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('app_index'))
     
     patient_id = session['patient_id']
     patient_name = session['patient_name']
@@ -537,10 +541,10 @@ def diagnosis_result():
     )
 
 
-@app.route('/diagnosis/result/pdf', methods=['GET'])
+@app.route('/app/diagnosis/result/pdf', methods=['GET'])
 def generate_pdf():
     if 'patient_id' not in session or 'diagnosis_data' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('app_index'))
     
     patient_id = session['patient_id']
     patient_name = session['patient_name']
@@ -573,10 +577,10 @@ def generate_pdf():
     except Exception as e:
         return f"Error generating PDF: {str(e)}"
 
-@app.route('/patient/history', methods=['GET'])
+@app.route('/app/patient/history', methods=['GET'])
 def patient_history():
     if 'patient_id' not in session:
-        return redirect(url_for('index'))
+        return redirect(url_for('app_index'))
     
     patient_id = session['patient_id']
     patient_name = session['patient_name']
@@ -584,7 +588,7 @@ def patient_history():
     
     return render_template('patient_history.html', patient_id=patient_id, patient_name=patient_name, history=history)
 
-@app.route('/submit_feedback', methods=['POST'])
+@app.route('/app/submit_feedback', methods=['POST'])
 def submit_feedback():
     data = request.get_json()
     diagnosis_type = data.get('diagnosis_type', '').lower()

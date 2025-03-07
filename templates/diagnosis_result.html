@@ -158,7 +158,7 @@
                         <tr>
                             <td>{{ treatment.intervention }}</td>
                             <td>
-                                <span class="severity-badge" style="background: {{ 'var(--primary-color)' if treatment.priority == 'High' else '#f39c12' if treatment.priority == 'Medium' else '#7f8c8d' }}; color: white;">
+                                 <span class="severity-badge" style="background: {{ 'var(--primary-color)' if treatment.priority == 'High' else '#f39c12' if treatment.priority == 'Medium' else '#7f8c8d' }}; color: white;">
                                     {{ treatment.priority }}
                                 </span>
                             </td>
@@ -172,10 +172,10 @@
             {% endif %}
             <!-- (Inside your decision_html, right after the actions container) -->
             <div class="actions-container">
-                <a href="/diagnosis/result/pdf" class="button pdf-button">
+                <a href="/app/diagnosis/result/pdf" class="button pdf-button">
                     <i class="fas fa-file-pdf"></i> Download PDF Report
                 </a>
-                <a href="/diagnosis/options" class="button btn-primary">
+                <a href="/app/diagnosis/options" class="button btn-primary">
                     <i class="fas fa-arrow-left"></i> Back to Options
                 </a>
             </div>
@@ -205,7 +205,7 @@
                 };
 
                 // Send feedback via an AJAX POST request
-                fetch('/submit_feedback', {
+                fetch('/app/submit_feedback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

@@ -24,7 +24,7 @@
                     Search for an existing patient by name, ID, or phone number, or create a new patient record.
                 </div>
                 
-                <form action="/patient_search" method="post" class="search-form">
+                <form action="app/patient_search" method="post" class="search-form">
                     <div class="search-container">
                         <input type="text" name="search_term" placeholder="Enter patient name, ID, or phone number" 
                                class="search-input" required>
@@ -36,7 +36,7 @@
 
                 <div class="divider">OR</div>
 
-                <a href="/patient/new" class="btn-create">
+                <a href="app/patient/new" class="btn-create">
                     <i class="fas fa-user-plus"></i> Create New Patient
                 </a>
             </div>
