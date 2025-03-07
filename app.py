@@ -61,10 +61,53 @@ genai.configure(api_key="AIzaSyDNqtEYmu9moev-6nZTjrBNW4mwoXXP_RA")
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')
 
 def prepare_image(img_path, target_size=(224, 224)):
-    img = Image.open(img_path).convert('RGB').resize(target_size)
-    img_array = np.array(img) / 255.0
-    img_batch = np.expand_dims(img_array, axis=0)
-    return img_batch
+    """Handle both standard images and DICOM files for model input preparation"""
+    try:
+        # Check for DICOM format
+        if img_path.lower().endswith(('.dcm', '.dicom')):
+            import pydicom
+            from pydicom.pixels.processing import convert_color_space
+
+            # Read DICOM file
+            ds = pydicom.dcmread(img_path)
+            img_array = ds.pixel_array
+
+            # Handle MONOCHROME1 inversion
+            if ds.PhotometricInterpretation == "MONOCHROME1":
+                img_array = np.max(img_array) - img_array
+
+            # Apply rescale parameters if present
+            slope = ds.get('RescaleSlope', 1.0)
+            intercept = ds.get('RescaleIntercept', 0.0)
+            img_array = img_array * slope + intercept
+
+            # Normalize to 0-255
+            img_min = np.min(img_array)
+            img_max = np.max(img_array)
+            if img_min != img_max:
+                img_array = (img_array - img_min) / (img_max - img_min) * 255
+            else:  # Handle uniform images
+                img_array = np.zeros_like(img_array) if img_min == 0 else np.full_like(img_array, 255)
+            
+            img_array = img_array.astype(np.uint8)
+            
+            # Convert to PIL Image
+            img = Image.fromarray(img_array).convert('L')  # Grayscale
+            img = img.convert('RGB')  # Convert to RGB for model compatibility
+        else:
+            # Standard image processing
+            img = Image.open(img_path).convert('RGB')
+
+        # Universal processing
+        img = img.resize(target_size)
+        img_array = np.array(img) / 255.0  # Normalize to [0,1]
+        img_batch = np.expand_dims(img_array, axis=0)
+        
+        return img_batch
+
+    except Exception as e:
+        # Handle exceptions and clean up if needed
+        raise ValueError(f"Image processing failed: {str(e)}")
 
 def search_patient(identifier):
     """Search for a patient in FHIR using identifier"""
@@ -419,23 +462,94 @@ def xray_diagnosis():
     
     if request.method == 'POST':
         if 'xray_file' not in request.files:
-            return render_template('xray_diagnosis.html', error="X-ray file is required", patient_name=patient_name)
+            return render_template('xray_diagnosis.html', 
+                                error="X-ray file is required", 
+                                patient_name=patient_name)
         
         xray_file = request.files['xray_file']
         doctor_remarks = request.form.get('doctor_remarks', '')
         
         if xray_file.filename == '':
-            return render_template('xray_diagnosis.html', error="No file selected", patient_name=patient_name)
+            return render_template('xray_diagnosis.html', 
+                                error="No file selected", 
+                                patient_name=patient_name)
         
         os.makedirs('static/uploads', exist_ok=True)
-        xray_filepath = os.path.join('static/uploads', f"xray_{uuid.uuid4()}_{xray_file.filename}")
+        file_ext = os.path.splitext(xray_file.filename)[1].lower()
+        unique_id = uuid.uuid4()
+        xray_filepath = os.path.join('static/uploads', f"xray_{unique_id}{file_ext}")
         xray_file.save(xray_filepath)
-        xray_img_batch = prepare_image(xray_filepath, target_size=(512, 256))
-        xray_predictions = dental_model.predict(xray_img_batch)
-        xray_predicted_class_idx = np.argmax(xray_predictions, axis=1)[0]
-        xray_predicted_class = dental_le.inverse_transform([xray_predicted_class_idx])[0]
-        xray_confidence = xray_predictions[0][xray_predicted_class_idx] * 100
         
+        # DICOM Processing Block
+        is_dicom = file_ext in ['.dcm', '.dicom']
+        if is_dicom:
+            try:
+                import pydicom
+                from pydicom.pixels.processing import convert_color_space
+                
+                # Read DICOM file
+                ds = pydicom.dcmread(xray_filepath)
+                
+                # Get pixel array
+                img_array = ds.pixel_array
+                
+                # Handle MONOCHROME1 inversion
+                if ds.PhotometricInterpretation == "MONOCHROME1":
+                    img_array = np.max(img_array) - img_array
+                
+                # Apply Rescale Slope/Intercept if present
+                slope = ds.get('RescaleSlope', 1.0)
+                intercept = ds.get('RescaleIntercept', 0.0)
+                img_array = img_array * slope + intercept
+                
+                # Normalize to 0-255
+                img_min = np.min(img_array)
+                img_max = np.max(img_array)
+                if img_min != img_max:
+                    img_array = (img_array - img_min) / (img_max - img_min) * 255
+                else:  # Handle uniform images
+                    img_array = np.zeros_like(img_array) if img_min == 0 else np.full_like(img_array, 255)
+                
+                img_array = img_array.astype(np.uint8)
+                
+                # Convert to PIL Image
+                img = Image.fromarray(img_array).convert('L')  # Grayscale
+                img = img.convert('RGB')  # Convert to RGB for model
+                
+                # Overwrite with JPEG
+                new_path = os.path.join('static/uploads', f"xray_{unique_id}.jpg")
+                img.save(new_path, 'JPEG', quality=90)
+                os.remove(xray_filepath)  # Remove original DICOM
+                xray_filepath = new_path
+                
+            except Exception as e:
+                # Cleanup and error handling
+                if os.path.exists(xray_filepath):
+                    os.remove(xray_filepath)
+                return render_template('xray_diagnosis.html', 
+                                    error=f"DICOM processing failed: {str(e)}", 
+                                    patient_name=patient_name)
+        
+        # Image Processing and Prediction
+        try:
+            # Prepare image for model
+            img = Image.open(xray_filepath).convert('RGB')
+            img = img.resize((512, 256))  # Model-specific size
+            img_array = np.array(img) / 255.0
+            img_batch = np.expand_dims(img_array, axis=0)
+            
+            # Make prediction
+            xray_predictions = dental_model.predict(img_batch)
+            xray_predicted_class_idx = np.argmax(xray_predictions, axis=1)[0]
+            xray_predicted_class = dental_le.inverse_transform([xray_predicted_class_idx])[0]
+            xray_confidence = xray_predictions[0][xray_predicted_class_idx] * 100
+            
+        except Exception as e:
+            return render_template('xray_diagnosis.html', 
+                                error=f"Image processing failed: {str(e)}", 
+                                patient_name=patient_name)
+        
+        # Get AI Analysis
         diagnosis_data = get_gemini_diagnosis(
             "xray_diagnosis", 
             xray_predicted_class, 
@@ -444,11 +558,20 @@ def xray_diagnosis():
             doctor_remarks
         )
         
-        save_diagnostic_result(patient_id, "xray_diagnosis", diagnosis_data, doctor_remarks)
+        # Save to FHIR
+        if 'error' not in diagnosis_data:
+            save_result = save_diagnostic_result(
+                patient_id, 
+                "xray_diagnosis", 
+                diagnosis_data, 
+                doctor_remarks
+            )
+            if not save_result:
+                return render_template('xray_diagnosis.html', 
+                                    error="Failed to save diagnosis", 
+                                    patient_name=patient_name)
         
-        updated_history = get_patient_history(patient_id)
-        session['patient_history'] = updated_history
-
+        # Update session
         session['diagnosis_data'] = diagnosis_data
         session['diagnosis_type'] = "X-ray Analysis"
         session['condition_results'] = xray_predicted_class
@@ -456,9 +579,16 @@ def xray_diagnosis():
         session['image_path'] = xray_filepath.replace('static/', '')
         session['doctor_remarks'] = doctor_remarks
         
+        # Refresh history
+        updated_history = get_patient_history(patient_id)
+        session['patient_history'] = updated_history
+        
         return redirect(url_for('diagnosis_result'))
     
-    return render_template('xray_diagnosis.html', patient_name=patient_name)
+    # GET request handling
+    return render_template('xray_diagnosis.html', 
+                         patient_name=patient_name,
+                         accepted_formats=".jpg, .jpeg, .png, .dcm, .dicom")
 
 @app.route('/app/diagnosis/oral', methods=['GET', 'POST'])
 def oral_diagnosis():
