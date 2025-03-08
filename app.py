@@ -57,7 +57,7 @@ oral_le = LabelEncoder()
 oral_le.classes_ = np.load(oral_label_encoder_path, allow_pickle=True)
 
 # Configure Gemini API
-genai.configure(api_key="AIzaSyDNqtEYmu9moev-6nZTjrBNW4mwoXXP_RA")
+genai.configure(api_key="API_KEY")
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')
 
 def prepare_image(img_path, target_size=(224, 224)):
