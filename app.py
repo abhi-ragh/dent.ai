@@ -25,11 +25,11 @@ from fhirclient.models.humanname import HumanName
 from fhirclient.models.contactpoint import ContactPoint
 from fhirclient.models.fhirdate import FHIRDate
 from fhirclient.models.fhirdatetime import FHIRDateTime
-import pdfkit
+#import pdfkit
 from datetime import datetime, timezone
 import csv
 
-PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
+#PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.urandom(24)
@@ -666,7 +666,7 @@ def diagnosis_result():
         date=date
     )
 
-
+'''
 @app.route('/app/diagnosis/result/pdf', methods=['GET'])
 def generate_pdf():
     if 'patient_id' not in session or 'diagnosis_data' not in session:
@@ -702,6 +702,7 @@ def generate_pdf():
         return response
     except Exception as e:
         return f"Error generating PDF: {str(e)}"
+'''
 
 @app.route('/app/patient/history', methods=['GET'])
 def patient_history():
