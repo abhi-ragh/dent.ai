@@ -2,3 +2,6 @@ model/
 myenv/
 oral-diseases/
 xray_data/
+.terraform*
+terraform.tfstate.backup
+variables.tfvars
