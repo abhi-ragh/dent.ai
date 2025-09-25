@@ -23,11 +23,6 @@ variable "secret_key" {
     type = string
 }
 
-variable "private_ssh_key" {
-    description = "AWS private key"
-    type = string
-}
-
 variable "public_ssh_key" {
     description = "AWS public key"
     type = string

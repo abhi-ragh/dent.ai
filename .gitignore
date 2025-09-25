@@ -5,3 +5,4 @@ xray_data/
 .terraform*
 terraform.tfstate.backup
 variables.tfvars
+terraform.tfstate
