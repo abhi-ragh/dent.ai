@@ -4,7 +4,7 @@ stages:
 build_stage:
     stage: build 
     tags:
-        - ansible
+        - docker
     script: 
         - docker build -t dent.ai .
         - docker rm dent.ai || true
