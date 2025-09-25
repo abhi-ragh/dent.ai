@@ -1,0 +1,99 @@
+- name: My first play
+  hosts: myservers
+  become: true
+  
+  vars:
+    reg_token: 
+  tasks:
+   - name: Installing aptitude
+     apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+   - name: Install required system packages
+     apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+          - python3-pip
+          - build-essential
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+   - name: Install pip dependencies
+     pip:
+       name: 
+         - python-gitlab<=1.12.1
+         - virtualenv
+         - setuptools
+       extra_args: --break-system-packages 
+        
+   - name: Add Docker GPG apt Key
+     apt_key:
+       url: https://download.docker.com/linux/ubuntu/gpg
+       state: present
+
+   - name: Add Docker Repository
+     apt_repository:
+       repo: deb https://download.docker.com/linux/ubuntu focal stable
+       state: present
+
+   - name: Update apt and install docker-ce
+     apt:
+       name:
+         - docker-ce
+         - docker-ce-cli
+         - containerd.io
+       state: latest
+       update_cache: true
+
+   - name: Install Docker Module for Python
+     pip:
+       name: docker
+       extra_args: --break-system-packages       
+        
+   - name: Add gitlab-runner user to docker group
+     user:
+       name: gitlab-runner
+       append: yes
+       groups: docker
+
+   - name: Install gitlab runner
+     shell: |
+       curl -LJO https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/gitlab-runner_amd64.deb
+       dpkg -i gitlab-runner_amd64.deb
+     args:
+       creates: /usr/bin/gitlab-runner
+
+   - name: Register gitlab docker runnerglrt--J7fGN27lLPOzt1csL1pJW86MQpwOjE4ZmZsNAp0OjMKdTo2Z3hiahg.01.1j0t0uktx
+     command: |
+       gitlab-runner register \
+       --non-interactive \
+       --url "https://gitlab.com/" \
+       --registration-token "{{ reg_token }}" \
+       --executor "docker" \
+       --docker-image alpine:latest \
+       --description "docker-runner" \
+       --tag-list "azure, docker" \
+       --run-untagged="false" \
+       --locked="true" \
+       --access-level="ref_protected"
+
+   - name: Register gitlab shell runner
+     command: |
+       gitlab-runner register \
+       --non-interactive \
+       --url "https://gitlab.com/" \
+       --registration-token "{{ reg_token }}" \
+       --executor "shell" \
+       --description "shell executor" \
+       --tag-list "ansible" \
+       --run-untagged="false" \
+       --locked="true" \
+       --access-level="ref_protected"

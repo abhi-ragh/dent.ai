@@ -1,0 +1,11 @@
+stages:
+    - build
+    
+build_stage:
+    stage: build 
+    tags:
+        - ansible
+    script: 
+        - docker build -t dent.ai .
+        - docker rm dent.ai || true
+        - docker run -p 5000:5000 --name dent.ai dent.ai

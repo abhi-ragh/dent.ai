@@ -1,0 +1,2 @@
+[myservers]
+dent.ai ansible_host=34.234.93.85 ansible_user=ubuntu ansible_ssh_private_key_file=~/aws-root.pem
