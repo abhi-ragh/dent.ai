@@ -71,29 +71,15 @@
      args:
        creates: /usr/bin/gitlab-runner
 
-   - name: Register gitlab docker runnerglrt--J7fGN27lLPOzt1csL1pJW86MQpwOjE4ZmZsNAp0OjMKdTo2Z3hiahg.01.1j0t0uktx
+   - name: Register gitlab runner
      command: |
        gitlab-runner register \
        --non-interactive \
        --url "https://gitlab.com/" \
        --registration-token "{{ reg_token }}" \
-       --executor "docker" \
-       --docker-image alpine:latest \
-       --description "docker-runner" \
-       --tag-list "azure, docker" \
-       --run-untagged="false" \
-       --locked="true" \
-       --access-level="ref_protected"
-
-   - name: Register gitlab shell runner
-     command: |
-       gitlab-runner register \
-       --non-interactive \
-       --url "https://gitlab.com/" \
-       --registration-token "{{ reg_token }}" \
-       --executor "shell" \
-       --description "shell executor" \
-       --tag-list "ansible" \
-       --run-untagged="false" \
-       --locked="true" \
-       --access-level="ref_protected"
+       --executor "shell"
+      
+   - name: Set gitlab runner as a system service
+     shell: |
+        gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+        gitlab-runner start
